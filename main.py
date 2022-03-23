@@ -1,7 +1,9 @@
+import time
+
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtCore import pyqtSlot, Qt, QProcess
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFormLayout, QSpinBox, QVBoxLayout, QWidget, QHBoxLayout, \
-    QSizePolicy
+    QSizePolicy, QDoubleSpinBox
 
 from random import uniform
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
@@ -15,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.backends.backend_template import FigureCanvas
 from matplotlib.figure import Figure
+import json
 
 
 class Window (QMainWindow):
@@ -28,7 +31,6 @@ class Window (QMainWindow):
         self.down_lay = QHBoxLayout(self)
 
         self.contr_tab = ControlTab(self)
-        #elf.setCentralWidget(self.contr_tab)
         self.main_lay.addWidget(self.contr_tab)
         self.bar = QtWidgets.QProgressBar(self)
         self.main_lay.addWidget(self.bar)
@@ -37,6 +39,23 @@ class Window (QMainWindow):
         self.table.setHorizontalHeaderLabels(['Эксперименты'])
         self.table.resizeColumnsToContents()
         self.pic_tab = PictureTab(self)
+
+        self.contr_tab.start_bn.clicked.connect(self.Start)
+
+        self.config = {
+            'input_file':'input.txt',
+            'output_file':'output.txt',
+            'matrix_size':0,
+            'exp_count':0,
+            'gradient':0,
+            'concentration':0.0,
+            'fill_type':0
+        }
+        #self.pic_tab.arr=self.Download_matrix('output.txt')
+        #self.pic_tab.update()
+
+        self.GetSettings()
+
         self.down_lay.addWidget(self.table)
         self.down_lay.addWidget(self.pic_tab)
 
@@ -44,10 +63,43 @@ class Window (QMainWindow):
 
         self.widget.setLayout(self.main_lay)
         self.setCentralWidget(self.widget)
-        #m=self.mytab.randMatrix(5)
-        #self.mytab.DrawMatrix(m)
 
         self.show()
+
+    def Download_matrix(self,filename):
+         #with open(filename) as f:
+         matrix = []
+         with open(filename, 'r') as f:
+            for line in f:
+                row = []
+                for l in line[:-1].split(' '):
+                    row.append(int(l))
+                matrix.append(row)
+         print(matrix)
+         return matrix
+
+
+
+    def GetSettings(self):
+        self.config['matrix_size']=self.contr_tab.tab1.layout1.itemAt(0,1).widget().value()
+        self.config['exp_count'] = self.contr_tab.tab1.layout1.itemAt(1, 1).widget().value()
+        self.config['gradient'] = self.contr_tab.tab1.layout1.itemAt(2, 1).widget().value()
+        self.config['concentration'] = self.contr_tab.tab1.layout1.itemAt(3, 1).widget().value()
+        self.config['fill_type']=self.contr_tab.tab1.fill_type.currentIndex()
+        print(self.config)
+
+    def Start(self):
+        self.GetSettings()
+        #code = subprocess.call(['clasters.exe','input.txt','output.txt',self.config['matrix_size']])
+        proc1 = QProcess(self)
+        proc1.start('PO', ['input.txt', str(self.config['matrix_size']),str(self.config['concentration']),str(self.config['fill_type'])])
+        time.sleep(3)
+        proc2 = QProcess(self)
+        proc2.start('clasters',['input.txt','output.txt',str(self.config['matrix_size'])])
+        time.sleep(3)
+        #proc.start('C:/Windows/system32/notepad')
+        self.pic_tab.arr = self.Download_matrix(self.config['output_file'])
+        self.pic_tab.update()
 
 
 class ControlTab(QWidget):
@@ -61,6 +113,10 @@ class ControlTab(QWidget):
         self.tabs.addTab(self.tab1,"Настройки")
         self.tabs.addTab(self.tab2,'Детальный эксперимент')
         #self.tabs.resize(300, 300)
+        self.start_bn =None
+        self.tab1.layout1 = QFormLayout(self)
+        self.tab1.label = QtWidgets.QLabel()
+        self.tab1.fill_type = QtWidgets.QComboBox()
         self.tab1UI()
         self.tab2UI()
         self.layout.addWidget(self.tabs)
@@ -68,15 +124,15 @@ class ControlTab(QWidget):
 
     def tab1UI(self):
         self.tab1.tablay = QHBoxLayout(self)
-        self.tab1.layout1 = QFormLayout(self)
+        #self.tab1.layout1 = QFormLayout(self)
         self.tab1.layout1.addRow("Размер матрицы",QSpinBox())
         self.tab1.layout1.addRow("Количество экспериментов",QSpinBox())
         self.tab1.layout1.addRow("Градиентная вероятность", QSpinBox())
-        self.tab1.layout1.addRow("Концентрация", QSpinBox())
+        self.tab1.layout1.addRow("Концентрация", QDoubleSpinBox())
         self.tab1.tablay.addLayout(self.tab1.layout1)
-        self.tab1.label = QtWidgets.QLabel()
+        #self.tab1.label = QtWidgets.QLabel()
         self.tab1.label.setText("Тип заполнения")
-        self.tab1.fill_type = QtWidgets.QComboBox()
+        #self.tab1.fill_type = QtWidgets.QComboBox()
         self.tab1.fill_type.addItem("Случайное")
         self.tab1.fill_type.addItem("Шахматное")
         self.tab1.fill_type.addItem("Дождь")
@@ -108,30 +164,20 @@ class ControlTab(QWidget):
            # print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
 
 
-class MplWidget(QWidget):
-    def __init__(self, parent=None):
-        QWidget.__init__(self, parent)
-
-        self.canvas = FigureCanvas(Figure())
-        self.clb = []
-        self.plot = []
-
-        vertical_layout = QVBoxLayout()
-        vertical_layout.addWidget(self.canvas)
-
-        self.axes = self.canvas.figure.add_subplot(111)
-        self.setLayout(vertical_layout)
-        self.layout().addWidget(self.canvas.toolbar)
-        self.layout().addWidget(self.canvas)
-        X = np.random.randn(10, 8)
-        self.plot = sns.heatmap(X, cmap='PuBu', square=True, linewidth=0.1, linecolor=(0.1, 0.2, 0.2),
-                                ax=self.axes, vmin=np.min(X), vmax=np.max(X))
 
 class PictureTab(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
+
         self.arr=[[]]
+        self.heatmap = None
+        #self.heatmap.set(xticklabels=[])
+        #self.heatmap.set(yticklabels=[])
+        #self.heatmap.tick_params(bottom=False)
+        #self.heatmap.tick_params(left=False)
         self.fig =plt.figure(figsize=(6, 6))
+        self.Mpl = FigureCanvasQTAgg(self.fig)
+
         self.layout = QVBoxLayout(self)
         self.tabs = QtWidgets.QTabWidget()
         self.heat_tab = QWidget()
@@ -149,18 +195,21 @@ class PictureTab(QWidget):
         self.heat_tab.layout = QVBoxLayout(self)
         self.arr = self.randMatrix(50)  #
         #fig = plt.figure(figsize=(6, 6))
-        heatmap = sns.heatmap(self.arr, annot=False, cbar=False, vmin=None, vmax=None, cmap='rainbow')
-        heatmap.set(xticklabels=[])
-        heatmap.set(yticklabels=[])
-        heatmap.tick_params(bottom=False)
-        heatmap.tick_params(left=False)
-        self.Mpl = FigureCanvasQTAgg(self.fig)
+        self.heatmap = sns.heatmap(self.arr,
+                                   annot=False, cbar=False, vmin=None, vmax=None
+                                  ,xticklabels=[],yticklabels=[])
+        #self.heatmap.set(xticklabels=[])
+        #self.heatmap.set(yticklabels=[])
+        #self.heatmap.tick_params(bottom=False)
+        #self.heatmap.tick_params(left=False)
+        #self.Mpl = FigureCanvasQTAgg(self.fig)
         self.heat_tab.layout.addWidget(self.Mpl)
         self.heat_tab.setLayout(self.heat_tab.layout)
 
     def update(self):
-        x = self.randMatrix(50)
-        heatmap = sns.heatmap(x, annot=False, cbar=False, vmin=None, vmax=None, cmap='rainbow')
+        #self.arr = self.randMatrix(50)
+        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, vmin=None, vmax=None, cmap='rainbow',xticklabels=[],yticklabels=[])
+        #self.heatmap = sns.heatmap(matrix, annot=False, cbar=False, vmin=None, vmax=None, cmap='rainbow',xticklabels=[],yticklabels=[])
 
     def randMatrix(self, n):
         matrix = [[uniform(0, 1.0) for j in range(n)] for i in range(n)]
