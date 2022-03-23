@@ -75,7 +75,7 @@ class Window (QMainWindow):
                 for l in line[:-1].split(' '):
                     row.append(int(l))
                 matrix.append(row)
-         print(matrix)
+         #print(matrix)
          return matrix
 
 
@@ -175,7 +175,7 @@ class PictureTab(QWidget):
         #self.heatmap.set(yticklabels=[])
         #self.heatmap.tick_params(bottom=False)
         #self.heatmap.tick_params(left=False)
-        self.fig =plt.figure(figsize=(6, 6))
+        self.fig =plt.figure(figsize=(8, 8))
         self.Mpl = FigureCanvasQTAgg(self.fig)
 
         self.layout = QVBoxLayout(self)
@@ -208,12 +208,32 @@ class PictureTab(QWidget):
 
     def update(self):
         #self.arr = self.randMatrix(50)
-        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, vmin=None, vmax=None, cmap='rainbow',xticklabels=[],yticklabels=[])
+        #for i in range(len(self.arr)):
+          #  for j in range(len(self.arr[i])):
+                #self.arr[i][j] = self.arr[i][j]*10
+
+        #for i in self.arr:
+            #for j in i:
+               #i[j]= i[j]*10
+
+        print(self.arr)
+
+        colors = sns.color_palette( 'Paired',as_cmap=True)
+
+        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False,cmap =colors,
+                                   linecolor = 'black',linewidths =1,vmin=None, vmax=None,
+                                   xticklabels=[],yticklabels=[])
+        #self.heatmap = sns.clustermap(self.arr)
+
+        #АЛЯРМ НАХУЙ ЕСТЬ РЕШЕНИЕ. Делаем кастом палитру 100 цветов. По массиву кластеров берем %100 от значения. и получаем индекс в массиве цветов.
+        #во что красить.Походу придется  менять элементы на новые. например кластер 101 превращается в 1.
+
+        #sns.color_palette('Spectral',as_cmap =True)
         #self.heatmap = sns.heatmap(matrix, annot=False, cbar=False, vmin=None, vmax=None, cmap='rainbow',xticklabels=[],yticklabels=[])
 
     def randMatrix(self, n):
         matrix = [[uniform(0, 1.0) for j in range(n)] for i in range(n)]
-        print(matrix)
+        #print(matrix)
         return matrix
 
 def start_app():
