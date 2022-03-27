@@ -16,6 +16,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.backends.backend_template import FigureCanvas
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.figure import Figure
 import json
 
@@ -25,7 +26,6 @@ class Window (QMainWindow):
         super(Window, self).__init__()
         self.setWindowTitle("Testing Qt")
         self.setGeometry(400, 100, 800, 800) #Первые двве координаты смешение окна, последние две-размеры окна.
-
         self.widget = QWidget()
         self.main_lay = QVBoxLayout(self)
         self.down_lay = QHBoxLayout(self)
@@ -171,6 +171,13 @@ class PictureTab(QWidget):
 
         self.arr=[[]]
         self.heatmap = None
+        self.palette = ["#FFFFFF","#169D53","#F2F62A","#5E17EB","#F99514","#2E3192","#8FCE00","#E342B2","#FF0909","#B6932B",
+                        "#FEFF70","#C90076","#52E810","#FFF775","#FFB0C5","#8E8EAF","#20FDF0","#01DA31","#006FF1","#FFC000",
+                        "#2AC6F2","#FFD923","#F92C2C","#2AC6F2","#FF27B6","#6417FF","#ECA5FF","#195071","#FFF2D2","#A83F38",
+                        "#018065","#068BBF","#37A647","#F2B705","#A60A33","#6F2A8C","#D2E537","#533E56","#6E3531","#F2CB07",
+                        "#5CA904","#730BDD","#340A5E","#C84451","#4AB0D9","#D7F7F8","#3F399E","#FFF32D","#00F7FF","#F2BE22","#BEF222","#000000"]
+
+        #self.palette = ["#000000","#FFFFFF"]
         #self.heatmap.set(xticklabels=[])
         #self.heatmap.set(yticklabels=[])
         #self.heatmap.tick_params(bottom=False)
@@ -195,9 +202,7 @@ class PictureTab(QWidget):
         self.heat_tab.layout = QVBoxLayout(self)
         self.arr = self.randMatrix(50)  #
         #fig = plt.figure(figsize=(6, 6))
-        self.heatmap = sns.heatmap(self.arr,
-                                   annot=False, cbar=False, vmin=None, vmax=None
-                                  ,xticklabels=[],yticklabels=[])
+        self.heatmap = sns.heatmap(self.arr,annot=False, cbar=False, vmin=None, vmax=None,xticklabels=[],yticklabels=[])
         #self.heatmap.set(xticklabels=[])
         #self.heatmap.set(yticklabels=[])
         #self.heatmap.tick_params(bottom=False)
@@ -208,21 +213,23 @@ class PictureTab(QWidget):
 
     def update(self):
         #self.arr = self.randMatrix(50)
-        #for i in range(len(self.arr)):
-          #  for j in range(len(self.arr[i])):
-                #self.arr[i][j] = self.arr[i][j]*10
+        for i in range(len(self.arr)):
+            for j in range(len(self.arr[i])):
+                if self.arr[i][j] != 0 and self.arr[i][j]%50 == 0:
+                    self.arr[i][j] = 50
+                else:
+                    self.arr[i][j] = self.arr[i][j]%50
 
         #for i in self.arr:
             #for j in i:
                #i[j]= i[j]*10
 
         print(self.arr)
+        sns.set_palette(palette =self.palette)
+        #sns.palplot(sns.color_palette(self.palette))
+        #colors = list(self.palette)
 
-        colors = sns.color_palette( 'Paired',as_cmap=True)
-
-        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False,cmap =colors,
-                                   linecolor = 'black',linewidths =1,vmin=None, vmax=None,
-                                   xticklabels=[],yticklabels=[])
+        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False,cmap = self.palette,linecolor = 'black',linewidths =1,vmin=None, vmax=None,xticklabels=[],yticklabels=[])
         #self.heatmap = sns.clustermap(self.arr)
 
         #АЛЯРМ НАХУЙ ЕСТЬ РЕШЕНИЕ. Делаем кастом палитру 100 цветов. По массиву кластеров берем %100 от значения. и получаем индекс в массиве цветов.
