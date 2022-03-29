@@ -175,7 +175,7 @@ class PictureTab(QWidget):
                         "#FEFF70","#C90076","#52E810","#FFF775","#FFB0C5","#8E8EAF","#20FDF0","#01DA31","#006FF1","#FFC000",
                         "#2AC6F2","#FFD923","#F92C2C","#2AC6F2","#FF27B6","#6417FF","#ECA5FF","#808080","#660066","#A83F38",
                         "#018065","#068BBF","#37A647","#F2B705","#A60A33","#6F2A8C","#D2E537","#533E56","#4F0014","#F2CB07",
-                        "#5CA904","#730BDD","#340A5E","#C84451","#4AB0D9","#D7F7F8","#3F399E","#FFF32D","#00F7FF","#F2BE22","#BEF222","#000000"]
+                        "#5CA904","#730BDD","#340A5E","#C84451","#4AB0D9","#D7F7F8","#3F399E","#FFF32D","#00F7FF","#F2BE22","#BEF222","#000000,'#FF2800"]
 
         #self.palette = ["#000000","#FFFFFF"]
         #self.heatmap.set(xticklabels=[])
@@ -220,6 +220,8 @@ class PictureTab(QWidget):
                 else:
                     self.arr[i][j] = self.arr[i][j]%50
 
+        print(self.palette[50])
+        print(self.palette[51])
         #for i in self.arr:
             #for j in i:
                #i[j]= i[j]*10
@@ -242,6 +244,17 @@ class PictureTab(QWidget):
         matrix = [[uniform(0, 1.0) for j in range(n)] for i in range(n)]
         #print(matrix)
         return matrix
+
+    def draw_way(self,way_matrix):
+        for i in range(len(self.arr)):
+            for j in range(len(self.arr[i])):
+                if way_matrix[i][j]==51 :
+                    self.arr[i][j] = 51
+
+        sns.set_palette(palette=self.palette)
+        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, cmap=self.palette, linecolor='black',
+                                   linewidths=0.1, vmin=None, vmax=None, xticklabels=[], yticklabels=[])
+
 
 def start_app():
     app = QApplication(sys.argv)
