@@ -229,7 +229,7 @@ class PictureTab(QWidget):
         #sns.palplot(sns.color_palette(self.palette))
         #colors = list(self.palette)
 
-        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False,cmap = self.palette,linecolor = 'black',linewidths =1,vmin=None, vmax=None,xticklabels=[],yticklabels=[])
+        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False,cmap = self.palette,linecolor = 'black',linewidths =0.1,vmin=None, vmax=None,xticklabels=[],yticklabels=[])
         #self.heatmap = sns.clustermap(self.arr)
 
         #АЛЯРМ НАХУЙ ЕСТЬ РЕШЕНИЕ. Делаем кастом палитру 100 цветов. По массиву кластеров берем %100 от значения. и получаем индекс в массиве цветов.
