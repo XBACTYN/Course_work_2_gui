@@ -42,7 +42,8 @@ class Window(QMainWindow):
         self.pic_tab = PictureTab(self)
 
         self.contr_tab.start_bn.clicked.connect(self.Start)
-        self.contr_tab.way_bn.clicked.connect(self.pic_tab.DrawWay)
+        self.contr_tab.way_bn.clicked.connect(self.Way)
+        self.contr_tab.way_bn.setEnabled(False)
 
         self.config = {
             'input_file': 'input.txt',
@@ -51,7 +52,8 @@ class Window(QMainWindow):
             'exp_count': 0,
             'gradient': 0,
             'concentration': 0.0,
-            'fill_type': 0
+            'fill_type': 0,
+            'trace_file': 'traced_way.txt'
         }
         # self.pic_tab.arr=self.Download_matrix('output.txt')
         # self.pic_tab.update()
@@ -86,10 +88,15 @@ class Window(QMainWindow):
         self.config['gradient'] = self.contr_tab.tab1.layout1.itemAt(2, 1).widget().value()
         self.config['concentration'] = self.contr_tab.tab1.layout1.itemAt(3, 1).widget().value()
         self.config['fill_type'] = self.contr_tab.tab1.fill_type.currentIndex()
-        print(self.config)
+        #print(self.config)
 
     def Start(self):
+        self.contr_tab.way_bn.setEnabled(False)
         self.GetSettings()
+        if self.config['fill_type']==7:
+            self.config['matrix_size'] = 7
+        if self.config['fill_type']==8:
+            self.config['matrix_size'] = 9
         # code = subprocess.call(['clasters.exe','input.txt','output.txt',self.config['matrix_size']])
         proc1 = QProcess(self)
         proc1.start('PO', ['input.txt', str(self.config['matrix_size']), str(self.config['concentration']),
@@ -101,7 +108,14 @@ class Window(QMainWindow):
         # proc.start('C:/Windows/system32/notepad')
         self.pic_tab.arr = self.Download_matrix(self.config['output_file'])
         self.pic_tab.update()
+        self.contr_tab.way_bn.setEnabled(True)
 
+    def Way(self):
+        proc3 = QProcess(self)
+        proc3.start('dijkstra', ['output.txt', str(self.config['trace_file']),str(self.config['matrix_size'])])
+        time.sleep(3)
+        self.pic_tab.way_arr = self.Download_matrix(self.config['trace_file'])
+        self.pic_tab.DrawWay()
 
 class ControlTab(QWidget):
     def __init__(self, parent):
@@ -138,6 +152,11 @@ class ControlTab(QWidget):
         self.tab1.fill_type.addItem("Шахматное")
         self.tab1.fill_type.addItem("Дождь")
         self.tab1.fill_type.addItem("Кольца")
+        self.tab1.fill_type.addItem("Зебра горизонт")
+        self.tab1.fill_type.addItem("Зебра вертикаль")
+        self.tab1.fill_type.addItem("Буква H")
+        self.tab1.fill_type.addItem("Крест 7x7")
+        self.tab1.fill_type.addItem("Крест 9x9")
         self.tab1.secondlay = QVBoxLayout(self)
         self.tab1.secondlay.addWidget(self.tab1.label)
         self.tab1.secondlay.addWidget(self.tab1.fill_type)
@@ -178,8 +197,9 @@ class PictureTab(QWidget):
         self.arr = [[]]
         self.way_arr = []
         self.heatmap = None
+        self.cmap = None
         self.palette = ["#FFFFFF", "#169D53", "#F2F62A", "#5E17EB", "#F99514", "#2E3192", "#8FCE00", "#E342B2",
-                        "#FF0909", "#B6932B",
+                        "#FF00FF", "#B6932B",
                         "#FEFF70", "#C90076", "#52E810", "#FFF775", "#FFB0C5", "#8E8EAF", "#20FDF0", "#01DA31",
                         "#006FF1", "#FFC000",
                         "#2AC6F2", "#FFD923", "#F92C2C", "#2AC6F2", "#FF27B6", "#6417FF", "#ECA5FF", "#808080",
@@ -225,40 +245,57 @@ class PictureTab(QWidget):
         self.heat_tab.setLayout(self.heat_tab.layout)
 
     def update(self):
+        print('arr',self.arr)
         # self.arr = self.randMatrix(50)
         for i in range(len(self.arr)):
             for j in range(len(self.arr[i])):
-                if self.arr[i][j] != 0 and self.arr[i][j] % 50 == 0:
-                    self.arr[i][j] = -1
-                else:
+                #if self.arr[i][j] != 0 and self.arr[i][j] % 50 == 0:
+                    #self.arr[i][j] = -1
+                #else:
                     self.arr[i][j] = self.arr[i][j] % 50
 
-        print(self.palette[50])
+        print('colored way',self.arr)
+        #print(self.palette[50])
 
         # for i in self.arr:
         # for j in i:
         # i[j]= i[j]*10
 
-        print(self.arr)
+        #print(self.arr)
 
         #cmap1 = sns.color_palette(self.palette, as_cmap=True).copy()
         #colors = sns.color_palette(self.palette, as_cmap=True).copy()
-        cmap1 = matplotlib.colors.LinearSegmentedColormap.from_list('my_map', colors=self.palette)
-        cmap1.set_under(color='#FF0000')
-        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, cmap=cmap1, vmin=0, linecolor='black', linewidths=0.01,
+        self.cmap = matplotlib.colors.LinearSegmentedColormap.from_list('my_map', colors=self.palette)
+        #cmap1.set_under(color='#FF0000')
+        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, cmap=self.cmap, vmin=0, linecolor='black', linewidths=0.01,
                                    xticklabels=[], yticklabels=[])
 
-        # АЛЯРМ НАХУЙ ЕСТЬ РЕШЕНИЕ. Делаем кастом палитру 100 цветов. По массиву кластеров берем %100 от значения. и получаем индекс в массиве цветов.
-        # во что красить.Походу придется  менять элементы на новые. например кластер 101 превращается в 1.
 
     def randMatrix(self, n):
         matrix = [[uniform(0, 1.0) for j in range(n)] for i in range(n)]
         # print(matrix)
         return matrix
 
-    def DrawWay(self, ):
+    def DrawWay(self):
+        print('way',self.way_arr)
 
-        print('hui')
+        for i in range(len(self.way_arr)):
+            for j in range(len(self.way_arr[i])):
+                if self.way_arr[i][j] ==-1:
+                    continue
+                else:
+                    if self.way_arr[i][j]%50==0 and self.way_arr[i][j]!=0:
+                        self.way_arr[i][j]= 23
+                    else:
+                        self.way_arr[i][j] = self.way_arr[i][j] % 50
+
+        print('colored way',self.way_arr)
+        #cmap1 = matplotlib.colors.LinearSegmentedColormap.from_list('my_map', colors=self.palette)
+        self.cmap.set_under(color='#FF0000')
+        self.heatmap = sns.heatmap(self.way_arr, annot=False, cbar=False, cmap=self.cmap, vmin=0, linecolor='black',
+                                   linewidths=0.01,
+                                   xticklabels=[], yticklabels=[])
+
 
 
 def start_app():
