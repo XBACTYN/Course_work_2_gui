@@ -4,7 +4,7 @@ import matplotlib.colors
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot, Qt, QProcess
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFormLayout, QSpinBox, QVBoxLayout, QWidget, QHBoxLayout, \
-    QSizePolicy, QDoubleSpinBox
+    QSizePolicy, QDoubleSpinBox, QTableWidgetItem
 
 from random import uniform
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
@@ -22,6 +22,8 @@ from matplotlib.figure import Figure
 import json
 
 
+#Проверка. Это экспериментальная ветка.
+
 class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
@@ -34,15 +36,24 @@ class Window(QMainWindow):
         self.contr_tab = ControlTab(self)
         self.main_lay.addWidget(self.contr_tab)
         self.bar = QtWidgets.QProgressBar(self)
+        self.bar.setTextVisible(True)
         self.main_lay.addWidget(self.bar)
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(1)
         self.table.setHorizontalHeaderLabels(['Эксперименты'])
         self.table.resizeColumnsToContents()
+
+
+        self.experiments = []
+
+        ####
         self.pic_tab = PictureTab(self)
+        ####
+        self.table.cellClicked.connect(self.WriteAndLoad)
+
 
         self.contr_tab.start_bn.clicked.connect(self.Start)
-        self.contr_tab.way_bn.clicked.connect(self.Way)
+        self.contr_tab.way_bn.clicked.connect(self.pic_tab.DrawWay)
         self.contr_tab.way_bn.setEnabled(False)
 
         self.config = {
@@ -71,7 +82,6 @@ class Window(QMainWindow):
         self.show()
 
     def Download_matrix(self, filename):
-        # with open(filename) as f:
         matrix = []
         with open(filename, 'r') as f:
             for line in f:
@@ -93,29 +103,68 @@ class Window(QMainWindow):
     def Start(self):
         self.contr_tab.way_bn.setEnabled(False)
         self.GetSettings()
+
         if self.config['fill_type']==7:
             self.config['matrix_size'] = 7
         if self.config['fill_type']==8:
             self.config['matrix_size'] = 9
-        # code = subprocess.call(['clasters.exe','input.txt','output.txt',self.config['matrix_size']])
+
+        self.TableFilling()
+
+        self.contr_tab.way_bn.setEnabled(True)
+
+    def CalculateData(self):
         proc1 = QProcess(self)
         proc1.start('PO', ['input.txt', str(self.config['matrix_size']), str(self.config['concentration']),
                            str(self.config['fill_type'])])
-        time.sleep(3)
+        #time.sleep(3)
+
+        proc1.waitForFinished()
+        print('1')
         proc2 = QProcess(self)
         proc2.start('clasters', ['input.txt', 'output.txt', str(self.config['matrix_size'])])
-        time.sleep(3)
-        # proc.start('C:/Windows/system32/notepad')
-        self.pic_tab.arr = self.Download_matrix(self.config['output_file'])
-        self.pic_tab.update()
-        self.contr_tab.way_bn.setEnabled(True)
+        #time.sleep(3)
+        proc2.waitForFinished()
+        print('2')
 
     def Way(self):
         proc3 = QProcess(self)
         proc3.start('dijkstra', ['output.txt', str(self.config['trace_file']),str(self.config['matrix_size'])])
-        time.sleep(3)
-        self.pic_tab.way_arr = self.Download_matrix(self.config['trace_file'])
-        self.pic_tab.DrawWay()
+        #time.sleep(4)
+        proc3.waitForFinished()
+        print('3')
+        #self.pic_tab.way_arr = self.Download_matrix(self.config['trace_file'])
+
+        #self.pic_tab.DrawWay()
+
+    def TableFilling(self):
+        count = self.config['exp_count']
+        self.experiments.clear()
+        self.table.clear()
+        self.table.setHorizontalHeaderLabels(['Эксперименты'])
+        self.table.setRowCount(count)
+        self.bar.reset()
+        self.bar.setMaximum(count)
+        #Запихать это в потоки.
+        for i in range(1,count+1):
+            print('i ',i)
+            self.CalculateData()
+            self.Way()
+            self.experiments.append(Experiment(i,self.Download_matrix(self.config['output_file']),
+                                               self.Download_matrix(self.config['trace_file'])))
+            print('wrote')
+            self.table.setItem(i-1,0,QTableWidgetItem(i))
+            print('table')
+            self.bar.setValue(i)
+            print('bar')
+
+    def WriteAndLoad(self):
+        num = self.table.currentRow()
+        print('num ',num)
+        self.pic_tab.arr=self.experiments[num].arr
+        self.pic_tab.way_arr = self.experiments[num].way_arr
+        self.pic_tab.update()
+
 
 class ControlTab(QWidget):
     def __init__(self, parent):
@@ -167,7 +216,9 @@ class ControlTab(QWidget):
         self.tab1.layout1.itemAt(0, 1).widget().setMaximum(500)
         self.tab1.layout1.itemAt(1, 1).widget().setMaximum(500)
         self.tab1.layout1.itemAt(2, 1).widget().setMaximum(500)
-        self.tab1.layout1.itemAt(3, 1).widget().setMaximum(500)
+        self.tab1.layout1.itemAt(3, 1).widget().setMaximum(1)
+        self.tab1.layout1.itemAt(3, 1).widget().setSingleStep(0.1)
+        self.tab1.layout1.itemAt(1, 1).widget().setMinimum(1)
         self.tab1.setMaximumSize(450, 200)
 
         self.tab1.tablay.addLayout(self.tab1.secondlay)
@@ -176,7 +227,7 @@ class ControlTab(QWidget):
     def tab2UI(self):
         self.tab2.tablay = QHBoxLayout(self)
         self.start_bn = QtWidgets.QPushButton('Старт')
-        self.way_bn = QtWidgets.QPushButton('Туть')
+        self.way_bn = QtWidgets.QPushButton('Путь')
         self.tab2.tablay.addWidget(self.start_bn)
         self.tab2.tablay.addWidget(self.way_bn)
         self.tab2.tablay.setAlignment(Qt.AlignTop)
@@ -190,12 +241,18 @@ class ControlTab(QWidget):
     # print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
 
 
+class Experiment:
+    def __init__(self,number,arr,way):
+        self.num = number
+        self.arr = arr
+        self.way_arr = way
+
 class PictureTab(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
 
-        self.arr = [[]]
-        self.way_arr = []
+        self.arr = []
+        self.way_arr=[]
         self.heatmap = None
         self.cmap = None
         self.palette = ["#FFFFFF", "#169D53", "#F2F62A", "#5E17EB", "#F99514", "#2E3192", "#8FCE00", "#E342B2",
@@ -209,11 +266,7 @@ class PictureTab(QWidget):
                         "#5CA904", "#730BDD", "#340A5E", "#C84451", "#4AB0D9", "#D7F7F8", "#3F399E", "#FFF32D",
                         "#00F7FF", "#F2BE22", "#BEF222"]
 
-        # self.palette = ["#000000","#FFFFFF"]
-        # self.heatmap.set(xticklabels=[])
-        # self.heatmap.set(yticklabels=[])
-        # self.heatmap.tick_params(bottom=False)
-        # self.heatmap.tick_params(left=False)
+
         self.fig = plt.figure(figsize=(8, 8))
         self.Mpl = FigureCanvasQTAgg(self.fig)
 
@@ -230,55 +283,32 @@ class PictureTab(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
+
     def heat_tabUI(self):
         self.heat_tab.layout = QVBoxLayout(self)
-        self.arr = self.randMatrix(50)  #
-        # fig = plt.figure(figsize=(6, 6))
-        self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, vmin=None, vmax=None, xticklabels=[],
-                                   yticklabels=[])
-        # self.heatmap.set(xticklabels=[])
-        # self.heatmap.set(yticklabels=[])
-        # self.heatmap.tick_params(bottom=False)
-        # self.heatmap.tick_params(left=False)
         # self.Mpl = FigureCanvasQTAgg(self.fig)
         self.heat_tab.layout.addWidget(self.Mpl)
         self.heat_tab.setLayout(self.heat_tab.layout)
 
     def update(self):
-        print('arr',self.arr)
-        # self.arr = self.randMatrix(50)
+
         for i in range(len(self.arr)):
             for j in range(len(self.arr[i])):
-                #if self.arr[i][j] != 0 and self.arr[i][j] % 50 == 0:
-                    #self.arr[i][j] = -1
-                #else:
+                #
+                if self.arr[i][j] % 50 == 0 and self.arr[i][j] != 0:
+                    self.arr[i][j] = 23
+                else:
                     self.arr[i][j] = self.arr[i][j] % 50
+                    #
 
-        print('colored way',self.arr)
-        #print(self.palette[50])
-
-        # for i in self.arr:
-        # for j in i:
-        # i[j]= i[j]*10
-
-        #print(self.arr)
-
-        #cmap1 = sns.color_palette(self.palette, as_cmap=True).copy()
-        #colors = sns.color_palette(self.palette, as_cmap=True).copy()
+        #print('colored way',self.arr)
         self.cmap = matplotlib.colors.LinearSegmentedColormap.from_list('my_map', colors=self.palette)
-        #cmap1.set_under(color='#FF0000')
         self.heatmap = sns.heatmap(self.arr, annot=False, cbar=False, cmap=self.cmap, vmin=0, linecolor='black', linewidths=0.01,
                                    xticklabels=[], yticklabels=[])
 
 
-    def randMatrix(self, n):
-        matrix = [[uniform(0, 1.0) for j in range(n)] for i in range(n)]
-        # print(matrix)
-        return matrix
 
     def DrawWay(self):
-        print('way',self.way_arr)
-
         for i in range(len(self.way_arr)):
             for j in range(len(self.way_arr[i])):
                 if self.way_arr[i][j] ==-1:
@@ -289,7 +319,6 @@ class PictureTab(QWidget):
                     else:
                         self.way_arr[i][j] = self.way_arr[i][j] % 50
 
-        print('colored way',self.way_arr)
         #cmap1 = matplotlib.colors.LinearSegmentedColormap.from_list('my_map', colors=self.palette)
         self.cmap.set_under(color='#FF0000')
         self.heatmap = sns.heatmap(self.way_arr, annot=False, cbar=False, cmap=self.cmap, vmin=0, linecolor='black',
