@@ -28,20 +28,34 @@ class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
         self.setWindowTitle("Testing Qt")
-        self.setGeometry(400, 100, 800, 800)  # Первые двве координаты смешение окна, последние две-размеры окна.
+        self.setGeometry(50, 50, 1200, 900)  # Первые двве координаты смешение окна, последние две-размеры окна.
         self.widget = QWidget()
-        self.main_lay = QVBoxLayout(self)
-        self.down_lay = QHBoxLayout(self)
+
+        ... #Первый V второй H
+        #self.main_lay = QVBoxLayout(self)
+        #self.down_lay = QHBoxLayout(self)
+
+        self.main_lay = QHBoxLayout(self)
+        self.down_lay = QVBoxLayout(self)
+        self.up_lay = QVBoxLayout(self)
+        ...
 
         self.contr_tab = ControlTab(self)
-        self.main_lay.addWidget(self.contr_tab)
+        ...
+        #.main_lay.addWidget(self.contr_tab)
+        self.up_lay.addWidget((self.contr_tab))
+
+        ...
         self.bar = QtWidgets.QProgressBar(self)
         self.bar.setTextVisible(True)
-        self.main_lay.addWidget(self.bar)
+
+        ...
+        #.main_lay.addWidget(self.bar)
+        ...
         self.table = QtWidgets.QTableWidget()
         self.table.setColumnCount(1)
         self.table.setHorizontalHeaderLabels(['Эксперименты'])
-        self.table.resizeColumnsToContents()
+        #self.table.resizeColumnsToContents()
 
 
         self.experiments = []
@@ -71,10 +85,21 @@ class Window(QMainWindow):
 
         self.GetSettings()
 
-        self.down_lay.addWidget(self.table)
+        ...
+        #self.down_lay.addWidget(self.table)
+        #self.down_lay.addWidget(self.pic_tab)
+        self.up_lay.addWidget(self.table)
+        self.down_lay.addWidget(self.bar)
         self.down_lay.addWidget(self.pic_tab)
+        ...
 
+        ...
+        #добавлен up
+        self.main_lay.addLayout(self.up_lay)
+        #verticalSpacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        #self.main_lay.addItem(verticalSpacer)
         self.main_lay.addLayout(self.down_lay)
+        ...
 
         self.widget.setLayout(self.main_lay)
         self.setCentralWidget(self.widget)
@@ -206,12 +231,17 @@ class ControlTab(QWidget):
         self.tab1.fill_type.addItem("Буква H")
         self.tab1.fill_type.addItem("Крест 7x7")
         self.tab1.fill_type.addItem("Крест 9x9")
-        self.tab1.secondlay = QVBoxLayout(self)
-        self.tab1.secondlay.addWidget(self.tab1.label)
-        self.tab1.secondlay.addWidget(self.tab1.fill_type)
-        self.tab1.secondlay.setAlignment(Qt.AlignLeft)
-        self.tab1.secondlay.addStretch()
+
+        #self.tab1.secondlay = QVBoxLayout(self)
+        #self.tab1.secondlay.addWidget(self.tab1.label)
+        #self.tab1.secondlay.addWidget(self.tab1.fill_type)
+        #self.tab1.secondlay.setAlignment(Qt.AlignLeft)
+        #self.tab1.secondlay.addStretch()
+        self.tab1.layout1.addWidget(self.tab1.label)
+        self.tab1.layout1.addWidget(self.tab1.fill_type)
+        self.tab1.layout1.setAlignment(Qt.AlignLeft)
         self.tab1.tablay.setAlignment(Qt.AlignTop)
+        self.tab1.tablay.addStretch()
 
         self.tab1.layout1.itemAt(0, 1).widget().setMaximum(500)
         self.tab1.layout1.itemAt(1, 1).widget().setMaximum(500)
@@ -221,7 +251,7 @@ class ControlTab(QWidget):
         self.tab1.layout1.itemAt(1, 1).widget().setMinimum(1)
         self.tab1.setMaximumSize(450, 200)
 
-        self.tab1.tablay.addLayout(self.tab1.secondlay)
+        #self.tab1.tablay.addLayout(self.tab1.secondlay)
         self.tab1.setLayout(self.tab1.tablay)
 
     def tab2UI(self):
