@@ -142,27 +142,22 @@ class Window(QMainWindow):
         proc1 = QProcess(self)
         proc1.start('PO', ['input.txt', str(self.config['matrix_size']), str(self.config['concentration']),
                            str(self.config['fill_type'])])
-        #time.sleep(3)
 
-        proc1.waitForFinished()
+        proc1.waitForFinished(-1)
         print('1')
         proc2 = QProcess(self)
         proc2.start('clasters', ['input.txt', 'output.txt', str(self.config['matrix_size'])])
-        #time.sleep(3)
-        proc2.waitForFinished()
+        proc2.waitForFinished(-1)
         print('2')
 
     def Way(self):
         proc3 = QProcess(self)
         proc3.start('dijkstra', ['output.txt', str(self.config['trace_file']),str(self.config['matrix_size'])])
-        #time.sleep(4)
-        proc3.waitForFinished()
+        proc3.waitForFinished(-1)
         print('3')
-        #self.pic_tab.way_arr = self.Download_matrix(self.config['trace_file'])
-
-        #self.pic_tab.DrawWay()
 
     def TableFilling(self):
+        self.contr_tab.start_bn.setEnabled(False)
         count = self.config['exp_count']
         self.experiments.clear()
         self.table.clear()
@@ -182,6 +177,7 @@ class Window(QMainWindow):
             print('table')
             self.bar.setValue(i)
             print('bar')
+        self.contr_tab.start_bn.setEnabled(True)
 
     def WriteAndLoad(self):
         num = self.table.currentRow()
@@ -200,8 +196,7 @@ class ControlTab(QWidget):
         self.tab2 = QWidget()
 
         self.tabs.addTab(self.tab1, "Настройки")
-        self.tabs.addTab(self.tab2, 'Детальный эксперимент')
-        # self.tabs.resize(300, 300)
+        self.tabs.addTab(self.tab2, 'Запуск')
         self.start_bn = None
         self.tab1.layout1 = QFormLayout(self)
         self.tab1.label = QtWidgets.QLabel()
